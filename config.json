@@ -1,0 +1,15 @@
+{
+    "worksnaps": {
+        "api_url": "https://api.worksnaps.com/api"
+    },
+    "telegram": {
+        "token": "YOUR_TELEGRAM_BOT_TOKEN"
+    },
+    "database": {
+        "connection_string": "dbname=WorksnapsHelper user=admin password=Password2! host=postgres port=5432"
+    },
+    "redis": {
+        "host": "redis",
+        "port": 6379
+    }
+}
