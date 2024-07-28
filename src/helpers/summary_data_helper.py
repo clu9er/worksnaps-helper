@@ -1,10 +1,17 @@
-from helpers.worksnaps_api_helper import get_projects_summary_report
+from helpers.worksnaps_api_helper import get_projects_summary_report, get_projects, get_worksnaps_user
 
-from datetime import datetime
+from telegram.ext import ContextTypes
 
-async def get_summary_data(worksnaps_user_id: str, token: str, rate: float, currency: str, from_date: datetime, to_date: datetime, with_cache: bool = True) -> str:
+from datetime import datetime, time
+from models.project import Project
+from models.summary import Summary
+from typing import List
+
+async def get_current_month_summary_data(worksnaps_user_id: str, token: str, token_id: int, rate: float, currency: str, from_date: datetime, to_date: datetime, with_cache: bool = True) -> str:
     total_minutes = 0
-    summaries = await get_projects_summary_report(worksnaps_user_id, token, from_date, to_date, with_cache)
+
+    projects = await get_projects(token, token_id)
+    summaries = await get_projects_summary_report(worksnaps_user_id, token, from_date, to_date, projects, 'time_summary', with_cache)
     
     project_details = {}
     
@@ -41,5 +48,52 @@ async def get_summary_data(worksnaps_user_id: str, token: str, rate: float, curr
         message_lines.append(f"💰 <b>Total Salary</b>: {total_hours * rate} {currency}")
     
     message = "\n".join(message_lines)
+    
+    return message
+
+async def get_current_day_project_summary(project: Project, token: str, context: ContextTypes.DEFAULT_TYPE) -> str:
+    now = datetime.now()
+
+    from_date = datetime.combine(datetime(now.year, now.month, 26), time.min)
+    to_date = datetime.combine(datetime(now.year, now.month, 26), time.max)
+    
+    worksnaps_user = await get_worksnaps_user(token)
+    
+    summaries = await get_projects_summary_report(worksnaps_user.user_id, token, from_date, to_date, [project], 'time_summary', False)
+    message = generate_task_report_message(project.project_name, summaries)
+
+    context.user_data['tasks'] = summaries
+    
+    return message
+
+def generate_task_report_message(project_name: str, summaries: List[Summary]) -> str:
+    message = f"📋 <b>Project:</b> {project_name}\n\n"
+    message += "📝 <b>Tasks:</b>\n"
+
+    if not summaries:
+        message += "No tasks found for today. 🤷‍♂️"
+    else:
+        for summary in summaries:
+            message += f"--------------------\n"
+            message += f"🕒 <b>{summary.task_name}</b>\n"
+            message += f"⏳ Duration: {summary.duration_in_minutes} minutes\n"
+            message += f"--------------------\n"
+        message += "Keep up the good work! 💪"
+
+    return message
+
+def create_daily_report_message(summaries: List[Summary], userame: str) -> str:
+    message = ""
+
+    if not summaries:
+        message += "No tasks found for today. 🤷‍♂️"
+        return message
+
+    current_day = datetime.now().strftime('%d%m%Y')
+    message = f"#dailyreport #day{current_day} #{userame}\n\n"
+
+    for summary in summaries:
+        message += f"{summary.duration_in_minutes} mins\n"
+        message += f"<b>{summary.task_name}</b> - \n\n"
     
     return message

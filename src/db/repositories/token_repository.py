@@ -1,10 +1,11 @@
+import json
 import psycopg2
 import logging
 
 from typing import List
 from models.token import UserToken
 
-from db.redis.main import client as redis
+from db.redis.main import client as redis, ttl
 
 from config_reader import config
 
@@ -25,6 +26,7 @@ def insert_token(user_id: str, token: str, worksnaps_user_id: str) -> None:
         )
 
         connection.commit()
+        redis.delete("tokens")
     except Exception as e:
         logging.error(f"Error inserting token: {e}")
         connection.rollback()
@@ -65,6 +67,10 @@ def get_all_tokens() -> List[UserToken]:
         connection = psycopg2.connect(config.database.connection_string)
         cursor = connection.cursor()
 
+        cached_value = redis.get("tokens")
+        if cached_value:
+            return [UserToken.from_json(token) for token in json.loads(cached_value)]
+
         cursor.execute("""
                     SELECT t.token_id, t.api_token, ut.worksnaps_user_id, t.rate, t.currency, ut.user_id
                     FROM api_tokens t
@@ -78,6 +84,7 @@ def get_all_tokens() -> List[UserToken]:
         for row in rows:
             tokens.append(UserToken(token_id=row[0],api_token=row[1], worksnaps_user_id=row[2], rate=row[3], currency=row[4], user_id=row[5]))
 
+        redis.set("tokens", json.dumps([token.to_json() for token in tokens]), ex=ttl)
         return tokens
     except Exception as e:
         logging.error(f"Error getting token: {e}")
@@ -111,6 +118,7 @@ def add_rate(token_id: int, rate: float, currency: str) -> None:
                 """, (rate, currency, token_id))
 
         connection.commit()
+        redis.delete(f"token:{token_id}")
     except Exception as e:
         logging.error(f"Error adding rate: {e}")
         connection.rollback()
@@ -139,6 +147,34 @@ def delete_token(token_id: int) -> None:
         cursor.close()
         connection.close()
 
+def get_token(token_id: int) -> UserToken:
+    try:
+        connection = psycopg2.connect(config.database.connection_string)
+        cursor = connection.cursor()
+
+        cached_value = redis.get(f"token:{token_id}")
+        if cached_value:
+            return UserToken.from_json(json.loads(cached_value))
+
+        cursor.execute("""
+                    SELECT t.token_id, t.api_token, ut.worksnaps_user_id, t.rate, t.currency, ut.user_id
+                    FROM api_tokens t
+                    JOIN user_tokens ut ON t.token_id = ut.token_id
+                    WHERE t.token_id = %s
+                """, (token_id,))
+
+        row = cursor.fetchone()
+        user_token = UserToken(token_id=row[0],api_token=row[1], worksnaps_user_id=row[2], rate=row[3], currency=row[4], user_id=row[5])
+        redis.set(f"token:{token_id}", json.dumps(user_token.to_json()), ex=ttl)
+
+        return user_token
+    except Exception as e:
+        logging.error(f"Error getting token: {e}")
+        return None
+    finally:
+        cursor.close()
+        connection.close()
+
 def clear_cache(token_id: int, cursor) -> None:
     cursor.execute("""
                         SELECT at.api_token, ut.worksnaps_user_id
@@ -154,3 +190,7 @@ def clear_cache(token_id: int, cursor) -> None:
     
     redis.delete(f"user:{api_token}")
     redis.delete(f"summary:{worksnaps_user_id}")
+    redis.delete(f"projects:{token_id}")
+    
+    redis.delete(f"token:{token_id}")
+    redis.delete(f"tokens")

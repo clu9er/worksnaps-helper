@@ -17,7 +17,7 @@ class UserToken:
             'token_id': self.token_id,
             'api_token': self.api_token,
             'user_id': self.worksnaps_user_id,
-            'rate': self.rate,
+            'rate': float(self.rate),
             'currency': self.currency,
             'user_id': self.user_id
         }
@@ -27,7 +27,7 @@ class UserToken:
             json['token_id'],
             json['api_token'],
             json['user_id'],
-            json['rate'],
+            float(json['rate']),
             json['currency'],
             json['user_id']
         )
