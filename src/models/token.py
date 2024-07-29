@@ -29,6 +29,6 @@ class UserToken:
             api_token=json['api_token'],
             worksnaps_user_id=json['worksnaps_user_id'],
             rate=float(json['rate']) if json['rate'] is not None else None,
-            currency=json['currency']
-            user_id=json['user_id'],
+            currency=json['currency'],
+            user_id=json['user_id']
         )
