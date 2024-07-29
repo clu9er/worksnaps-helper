@@ -54,8 +54,8 @@ async def get_current_month_summary_data(worksnaps_user_id: str, token: str, tok
 async def get_current_day_project_summary(project: Project, token: str, context: ContextTypes.DEFAULT_TYPE) -> str:
     now = datetime.now()
 
-    from_date = datetime.combine(datetime(now.year, now.month, 26), time.min)
-    to_date = datetime.combine(datetime(now.year, now.month, 26), time.max)
+    from_date = datetime.combine(datetime(now.year, now.month, now.day), time.min)
+    to_date = datetime.combine(datetime(now.year, now.month, now.day), time.max)
     
     worksnaps_user = await get_worksnaps_user(token)
     
