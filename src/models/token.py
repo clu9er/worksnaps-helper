@@ -13,21 +13,22 @@ class UserToken:
         self.user_id = user_id
     
     def to_json(self):
-        return {
+        result = {
             'token_id': self.token_id,
             'api_token': self.api_token,
-            'user_id': self.worksnaps_user_id,
-            'rate': float(self.rate),
+            'user_id': self.user_id,
+            'worksnaps_user_id': self.worksnaps_user_id,
             'currency': self.currency,
-            'user_id': self.user_id
+            'rate': float(self.rate) if self.rate is not None else None
         }
-    
+        return result
+
     def from_json(json):
         return UserToken(
-            json['token_id'],
-            json['api_token'],
-            json['user_id'],
-            float(json['rate']),
-            json['currency'],
-            json['user_id']
+            token_id=json['token_id'],
+            api_token=json['api_token'],
+            worksnaps_user_id=json['worksnaps_user_id'],
+            rate=float(json['rate']) if json['rate'] is not None else None,
+            currency=json['currency']
+            user_id=json['user_id'],
         )
