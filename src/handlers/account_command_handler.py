@@ -19,7 +19,7 @@ async def accounts_command(update: Update, context: ContextTypes.DEFAULT_TYPE, r
         keyboard = []
         row = []
         for i, token in enumerate(tokens):
-            user_data = await get_worksnaps_user(token.api_token)
+            user_data = await get_worksnaps_user(token.api_token, token.token_id)
             button_text = user_data.email
             callback_data = f"account {token.token_id}"
             row.append(InlineKeyboardButton(button_text, callback_data=callback_data))
@@ -45,7 +45,7 @@ async def accounts_command(update: Update, context: ContextTypes.DEFAULT_TYPE, r
 
 async def receive_token(update: Update, context: ContextTypes.DEFAULT_TYPE):
     token = update.message.text
-    worksnaps_user = await get_worksnaps_user(token)
+    worksnaps_user = await get_worksnaps_user(token, None)
 
     user_id = update.effective_user.id
     user_exists = is_user_exists(update.effective_user.id)
@@ -65,11 +65,13 @@ async def receive_token(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 async def rate_received(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    rate = update.message.text.split(' ')[0]
+    user_id = update.effective_user.id
+
+    rate = str(update.message.text.split(' ')[0])
     currency = update.message.text.split(' ')[1]
 
-    token = context.user_data['token']
-    add_rate(token, rate, currency)
+    token = context.user_data['token_id']
+    add_rate(token, rate, currency,user_id)
 
     await update.message.reply_text("✅ Rate added. \n If you want to remove it later, just send 0 as your rate next time.", parse_mode=ParseMode.HTML)
     return START
@@ -82,10 +84,10 @@ async def project_report_for_current_day(update: Update, context: ContextTypes.D
         project_name=query.data.split(' ')[2]
     )
 
-    token = context.user_data['token']
     token_id = context.user_data['token_id']
+    token = get_token(token_id)
 
-    tasks = await get_current_day_project_summary(project, token, context)
+    tasks = await get_current_day_project_summary(project, token.api_token, token_id, context)
     
     reply_markup = InlineKeyboardMarkup([
         [InlineKeyboardButton('📅 Create daily report template', callback_data='create_daily_report')],
@@ -99,7 +101,7 @@ async def project_report_for_current_day(update: Update, context: ContextTypes.D
 
 async def handle_add_rate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    context.user_data['token'] = query.data.split(' ')[1]
+    context.user_data['token_id'] = query.data.split(' ')[1]
 
     await query.message.reply_text('💰 Please enter your rate along with the currency (e.g., 50 USD):')
     await query.answer()
@@ -131,8 +133,8 @@ async def handle_view_account(update: Update, context: ContextTypes.DEFAULT_TYPE
     token_id = query.data.split(' ')[1]
     token = get_token(token_id)
 
-    user_data = await get_worksnaps_user(token.api_token)
-    message = create_user_summary_message(user_data)
+    user_data = await get_worksnaps_user(token.api_token, token_id)
+    message = create_user_summary_message(user_data, token.api_token, token.rate, token.currency)
 
     reply_markup = InlineKeyboardMarkup([
         [
@@ -157,7 +159,6 @@ async def handle_view_tasks_report(update: Update, context: ContextTypes.DEFAULT
 
     message = '📝 Choose project to view tasks report: \n\n'
 
-    context.user_data['token'] = token.api_token
     context.user_data['token_id'] = token_id
 
     buttons = []
@@ -177,8 +178,8 @@ async def handle_view_tasks_report(update: Update, context: ContextTypes.DEFAULT
 
 async def handle_create_daily_report(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-
     username = query.from_user.username
+
     tasks = context.user_data['tasks']
     token_id = context.user_data['token_id']
 

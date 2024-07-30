@@ -9,7 +9,6 @@ import handlers.account_command_handler
 from config_reader import config
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ConversationHandler, MessageHandler, filters
 
-from states.start_command_states import WAITING_FOR_TOKEN
 from states.account_command_states import RATE, START, TOKEN, PROJECT
 
 from db.main import migrate_database
@@ -27,7 +26,7 @@ if __name__ == '__main__':
     start_conversation_handler = ConversationHandler(
         entry_points=[CommandHandler('start', handlers.start_command_handler.start_command)],
         states={
-            WAITING_FOR_TOKEN: [MessageHandler(filters.TEXT & ~filters.COMMAND, handlers.account_command_handler.receive_token)],
+            TOKEN: [MessageHandler(filters.TEXT & ~filters.COMMAND, handlers.account_command_handler.receive_token)],
         },
         fallbacks=[MessageHandler(filters.COMMAND, handlers.start_command_handler.ignore_commands)],
     )

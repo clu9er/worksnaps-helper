@@ -19,11 +19,16 @@ class RedisConfig:
     port: int
 
 @dataclass
+class EncryptionConfig:
+    key: str
+
+@dataclass
 class Config:
     database: DatabaseConfig
     telegram: TelegramConfig
     worksnaps: WorksnapsConfig
     redis: RedisConfig
+    encryption: EncryptionConfig
 
     @staticmethod
     def from_json_file(config_path: str):
@@ -33,7 +38,8 @@ class Config:
             database=DatabaseConfig(**config_data['database']),
             telegram=TelegramConfig(**config_data['telegram']),
             worksnaps=WorksnapsConfig(**config_data['worksnaps']),
-            redis=RedisConfig(**config_data['redis'])
+            redis=RedisConfig(**config_data['redis']),
+            encryption=EncryptionConfig(**config_data['encryption'])
         )
 
 config_path = './config.json'

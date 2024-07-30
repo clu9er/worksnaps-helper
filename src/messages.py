@@ -32,12 +32,15 @@ def create_existing_user_greeting_message(token_exists: bool) -> str:
 
     return message
 
-def create_user_summary_message(user: WorksnapsUser) -> str:
+def create_user_summary_message(user: WorksnapsUser, token: str, rate: str, currency: str) -> str:
     message = (
         f"<b>👤 Account Summary</b>\n\n"
         f"<b>Name</b>: {user.first_name} {user.last_name}\n"
         f"<b>Email</b>: {user.email}\n"
-        f"<b>API Token</b>: {user.api_token}\n"
+        f"<b>API Token</b>: <tg-spoiler>{token}</tg-spoiler>\n"
     )
+
+    if rate and currency:
+        message += f"<b>Rate</b>: <tg-spoiler>{rate} {currency}</tg-spoiler>"
 
     return message

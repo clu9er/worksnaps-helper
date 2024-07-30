@@ -18,6 +18,7 @@ from db.redis.main import client as redis, ttl
 from config_reader import config
 
 from utils.date_utils import get_adjusted_timestamp
+from utils.aes_cipher import AESCipher
 
 def generate_authorization_header(token: str):
     auth_hash = base64.b64encode((token + ":ignored").encode()).decode()
@@ -82,12 +83,12 @@ async def get_projects(token: str, token_id: int) -> List[Project]:
         logging.error(f"Failed to fetch projects: {response.status_code} - {response.content if response else 'No response'}")
         return None
 
-async def get_worksnaps_user(token: str) -> WorksnapsUser:
+async def get_worksnaps_user(token: str, token_id: int) -> WorksnapsUser:
     try:
         url = f'{config.worksnaps.api_url}/me.xml'
         auth_hash = generate_authorization_header(token)
 
-        cached_value = redis.get(f'user:{token}')
+        cached_value = redis.get(f'user:{token_id}')
         if cached_value:
             return WorksnapsUser.from_json(json.loads(cached_value))
 
@@ -101,7 +102,13 @@ async def get_worksnaps_user(token: str) -> WorksnapsUser:
 
         if response and response.content:
             user = parse_user_xml(response.content)
-            redis.set(f'user:{token}', json.dumps(user.to_json()), ex=ttl)
+
+            cipher = AESCipher(config.encryption.key)
+            user.api_token = cipher.encrypt(user.api_token)
+
+            if token_id is not None:
+                redis.set(f'user:{token_id}', json.dumps(user.to_json()), ex=ttl)
+
             return user
 
         return None

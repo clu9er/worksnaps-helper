@@ -3,4 +3,4 @@ psycopg2_binary==2.9.9
 python-telegram-bot==21.4
 python-telegram-bot[job-queue]==21.4
 redis==5.0.7
-schedule==1.2.2
+pycryptodome==3.20.0

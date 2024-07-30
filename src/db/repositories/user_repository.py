@@ -1,6 +1,8 @@
 import psycopg2
 import logging as logger
 
+from utils.aes_cipher import AESCipher
+
 from config_reader import config
 
 def insert_user(user_id: str, username: str, first_name: str, last_name: str, token: str, worksnaps_user_id: int):
@@ -14,15 +16,21 @@ def insert_user(user_id: str, username: str, first_name: str, last_name: str, to
             VALUES (%s, %s, %s, %s)
         """, (user_id, username, first_name, last_name))
 
+        cipher = AESCipher(config.encryption.key)
+
+        token = cipher.encrypt(token)
+
         cursor.execute("""
             INSERT INTO api_tokens (api_token)
-            VALUES (%s)
+            VALUES (%s) RETURNING token_id
         """, (token,))
+
+        token_id = cursor.fetchone()[0]
 
         cursor.execute("""
             INSERT INTO user_tokens (user_id, token_id, worksnaps_user_id)
-            VALUES (%s, (SELECT token_id FROM api_tokens WHERE api_token = %s), %s)
-        """, (user_id, token, worksnaps_user_id))
+            VALUES (%s, %s, %s)
+        """, (user_id, token_id, worksnaps_user_id))
 
         connection.commit()
     except Exception as e:

@@ -11,5 +11,8 @@
     "redis": {
         "host": "redis",
         "port": 6379
+    },
+    "encryption": {
+        "key": "YOUR_ENCRYPTION_KEY"
     }
 }

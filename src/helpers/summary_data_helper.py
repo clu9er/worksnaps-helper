@@ -7,7 +7,7 @@ from models.project import Project
 from models.summary import Summary
 from typing import List
 
-async def get_current_month_summary_data(worksnaps_user_id: str, token: str, token_id: int, rate: float, currency: str, from_date: datetime, to_date: datetime, with_cache: bool = True) -> str:
+async def get_current_month_summary_data(worksnaps_user_id: str, token: str, token_id: int, rate: str, currency: str, from_date: datetime, to_date: datetime, with_cache: bool = True) -> str:
     total_minutes = 0
 
     projects = await get_projects(token, token_id)
@@ -44,20 +44,20 @@ async def get_current_month_summary_data(worksnaps_user_id: str, token: str, tok
     message_lines.append(f"----------------------------------------")
     message_lines.append(f"⏰ <b>Total Time Spent</b>: {total_hours} hours and {total_minutes_remainder} minutes")
     
-    if rate and rate > 0 and currency: 
-        message_lines.append(f"💰 <b>Total Salary</b>: {total_hours * rate} {currency}")
+    if rate and float(rate) > 0 and currency: 
+        message_lines.append(f"💰 <b>Total Salary</b>: {(total_minutes / 60) * float(rate)} {currency}")
     
     message = "\n".join(message_lines)
     
     return message
 
-async def get_current_day_project_summary(project: Project, token: str, context: ContextTypes.DEFAULT_TYPE) -> str:
+async def get_current_day_project_summary(project: Project, token: str, token_id: int, context: ContextTypes.DEFAULT_TYPE) -> str:
     now = datetime.now()
 
     from_date = datetime.combine(datetime(now.year, now.month, now.day), time.min)
     to_date = datetime.combine(datetime(now.year, now.month, now.day), time.max)
     
-    worksnaps_user = await get_worksnaps_user(token)
+    worksnaps_user = await get_worksnaps_user(token, token_id)
     
     summaries = await get_projects_summary_report(worksnaps_user.user_id, token, from_date, to_date, [project], 'time_summary', False)
     message = generate_task_report_message(project.project_name, summaries)

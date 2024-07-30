@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS "api_tokens" (
     "token_id" SERIAL PRIMARY KEY,
     "api_token" TEXT NOT NULL,
-    "rate" DECIMAL(10, 2),
+    "rate" TEXT,
     "currency" VARCHAR(15)
 );
 
