@@ -45,7 +45,8 @@ async def get_current_month_summary_data(worksnaps_user_id: str, token: str, tok
     message_lines.append(f"⏰ <b>Total Time Spent</b>: {total_hours} hours and {total_minutes_remainder} minutes")
     
     if rate and float(rate) > 0 and currency: 
-        message_lines.append(f"💰 <b>Total Salary</b>: {(total_minutes / 60) * float(rate)} {currency}")
+        salary = (total_minutes / 60) * float(rate)
+        message_lines.append(f"💰 <b>Total Salary</b>: {round(salary, 2)} {currency}")
     
     message = "\n".join(message_lines)
     
