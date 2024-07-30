@@ -3,11 +3,15 @@ from telegram.ext import ContextTypes, ConversationHandler
 from telegram.constants import ParseMode
 from db.repositories.user_repository import is_user_exists, insert_user
 from db.repositories.token_repository import insert_token, get_tokens, add_rate, delete_token, get_token
-from helpers.worksnaps_api_helper import get_worksnaps_user, get_projects
+from helpers.worksnaps_api_helper import get_worksnaps_user, get_projects, get_projects_summary_report
 from helpers.summary_data_helper import get_current_day_project_summary, create_daily_report_message
 from messages import create_user_summary_message
 from models.project import Project
 from states.account_command_states import RATE, START, TOKEN
+from utils.date_utils import get_today_date_range
+from typing import List
+from models.summary import Summary
+from collections import defaultdict
 
 async def accounts_command(update: Update, context: ContextTypes.DEFAULT_TYPE, replaced: bool = False):
     user_id = update.effective_user.id
@@ -133,6 +137,8 @@ async def handle_view_account(update: Update, context: ContextTypes.DEFAULT_TYPE
     token_id = query.data.split(' ')[1]
     token = get_token(token_id)
 
+    context.user_data['token_id'] = token_id
+
     user_data = await get_worksnaps_user(token.api_token, token_id)
     message = create_user_summary_message(user_data, token.api_token, token.rate, token.currency)
 
@@ -143,6 +149,9 @@ async def handle_view_account(update: Update, context: ContextTypes.DEFAULT_TYPE
         ],
         [
             InlineKeyboardButton('View tasks report 📝', callback_data=f'tasks_report {token.token_id}'),
+            InlineKeyboardButton("Today's Project Report 🗂️", callback_data='daily_reports')
+        ],
+        [
             InlineKeyboardButton('Back to accounts 🔙', callback_data='back')
         ]
     ])
@@ -192,6 +201,40 @@ async def handle_create_daily_report(update: Update, context: ContextTypes.DEFAU
     await query.edit_message_text(message, parse_mode=ParseMode.HTML, reply_markup=reply_markup)
     await query.answer()
     return START
+
+async def handle_create_daily_reports(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    username = update.callback_query.from_user.username
+    token_id = context.user_data['token_id']
+    token = get_token(token_id)
+
+    projects = await get_projects(token.api_token, token.token_id)
+
+    from_date, to_date = get_today_date_range()
+    summaries = await get_projects_summary_report(token.worksnaps_user_id, token.api_token, from_date, to_date, projects, 'time_summary', False)
+
+    grouped_summaries = group_summaries_by_project(summaries)
+
+    if len(grouped_summaries) == 0:
+        await update.callback_query.answer('No tasks found for the current day 😢')
+        return START
+
+    for summary in grouped_summaries:
+        message = create_daily_report_message(summary, username)
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=message, parse_mode=ParseMode.HTML)
+        
+    await update.callback_query.answer('✅ Daily reports created successfully')
+    return START
+
+def group_summaries_by_project(summaries: List[Summary]):
+    grouped_summaries = defaultdict(list)
+    
+    for summary in summaries:
+        project_name = summary.project_name
+        grouped_summaries[project_name].append(summary)
+    
+    project_lists = list(grouped_summaries.values())
+    
+    return project_lists
 
 async def handle_back(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return await accounts_command(update, context, True)

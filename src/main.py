@@ -66,6 +66,9 @@ if __name__ == '__main__':
     app.add_handler(CallbackQueryHandler(handlers.account_command_handler.handle_back, pattern='^back$'))
     app.add_handler(CallbackQueryHandler(handlers.account_command_handler.handle_project_report, pattern='^project '))
     app.add_handler(CallbackQueryHandler(handlers.account_command_handler.handle_create_daily_report, pattern='^create_daily_report'))
+    app.add_handler(CallbackQueryHandler(handlers.account_command_handler.handle_create_daily_reports, pattern='^daily_reports'))
+    app.add_handler(CallbackQueryHandler(handlers.statistics_command_handler.handle_daily_summary_callback, pattern='^today_summary'))
+    app.add_handler(CallbackQueryHandler(handlers.statistics_command_handler.handle_month_summary_callback, pattern='^month_summary'))
 
     app.add_handler(CommandHandler('statistics', handlers.statistics_command_handler.statistics_command))
 

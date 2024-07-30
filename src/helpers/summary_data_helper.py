@@ -2,12 +2,15 @@ from helpers.worksnaps_api_helper import get_projects_summary_report, get_projec
 
 from telegram.ext import ContextTypes
 
-from datetime import datetime, time
+from datetime import datetime
 from models.project import Project
 from models.summary import Summary
+
+from utils.date_utils import get_today_date_range
+
 from typing import List
 
-async def get_current_month_summary_data(worksnaps_user_id: str, token: str, token_id: int, rate: str, currency: str, from_date: datetime, to_date: datetime, with_cache: bool = True) -> str:
+async def get_summary_data(worksnaps_user_id: str, token: str, token_id: int, rate: str, currency: str, from_date: datetime, to_date: datetime, with_cache: bool = True) -> str:
     total_minutes = 0
 
     projects = await get_projects(token, token_id)
@@ -55,8 +58,7 @@ async def get_current_month_summary_data(worksnaps_user_id: str, token: str, tok
 async def get_current_day_project_summary(project: Project, token: str, token_id: int, context: ContextTypes.DEFAULT_TYPE) -> str:
     now = datetime.now()
 
-    from_date = datetime.combine(datetime(now.year, now.month, now.day), time.min)
-    to_date = datetime.combine(datetime(now.year, now.month, now.day), time.max)
+    from_date, to_date = get_today_date_range()
     
     worksnaps_user = await get_worksnaps_user(token, token_id)
     
