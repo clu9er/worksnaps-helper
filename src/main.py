@@ -76,7 +76,7 @@ if __name__ == '__main__':
     
     job_queue = app.job_queue
 
-    weekdays = (0, 1, 2, 3, 4)
+    weekdays = (1, 2, 3, 4, 5)
     job_queue.run_daily(send_day_summary, datetime.time(hour=19, minute=10), days=weekdays)
     job_queue.run_daily(send_month_summary, datetime.time(hour=19, minute=10, second=30), days=weekdays)
 
