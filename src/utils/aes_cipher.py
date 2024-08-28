@@ -1,3 +1,4 @@
+import os
 import base64
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad,unpad
@@ -20,3 +21,7 @@ class AESCipher(object):
         cipher = AES.new(self.key, AES.MODE_ECB)
         decrypted = cipher.decrypt(enc)
         return unpad(decrypted, self.bs).decode('utf-8')
+
+    def generate_aes_key(key_size=32):
+        key = os.urandom(key_size)
+        return base64.b64encode(key).decode('utf-8')

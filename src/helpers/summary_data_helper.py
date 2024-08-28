@@ -56,8 +56,7 @@ async def get_summary_data(worksnaps_user_id: str, token: str, token_id: int, ra
     return message
 
 async def get_current_day_project_summary(project: Project, token: str, token_id: int, context: ContextTypes.DEFAULT_TYPE) -> str:
-    now = datetime.now()
-
+    
     from_date, to_date = get_today_date_range()
     
     worksnaps_user = await get_worksnaps_user(token, token_id)

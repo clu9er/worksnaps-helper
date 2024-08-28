@@ -1,7 +1,7 @@
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
-from datetime import datetime, timedelta, time
+from datetime import datetime
 from db.repositories.token_repository import get_tokens
 from helpers.summary_data_helper import get_summary_data
 from utils.date_utils import get_today_date_range, get_month_date_range
@@ -42,8 +42,12 @@ async def get_summary_report(update: Update, context: ContextTypes.DEFAULT_TYPE,
         await wait_message_text.edit_text("You don't have any tokens.")
         return
 
+    summary_data = ""
+
     for token in tokens:
-        summary_data = await get_summary_data(token.worksnaps_user_id, token.api_token, token.token_id, token.rate, token.currency, from_date, to_date, with_cache)
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=summary_data, parse_mode=ParseMode.HTML)
+        summary_data += await get_summary_data(token.worksnaps_user_id, token.api_token, token.token_id, token.rate, token.currency, from_date, to_date, with_cache)
+        summary_data += "\n\n"
+
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=summary_data, parse_mode=ParseMode.HTML)
 
     await wait_message.delete()
