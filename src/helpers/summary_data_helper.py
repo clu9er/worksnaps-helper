@@ -31,7 +31,7 @@ async def get_summary_data(worksnaps_user_id: str, token: str, token_id: int, ra
     total_hours = total_minutes // 60
     total_minutes_remainder = total_minutes % 60
 
-    is_monthly = from_date.day != to_date.day
+    is_monthly = from_date.month != to_date.month
     period = "Month" if is_monthly else "Day"
 
     message_lines = [
